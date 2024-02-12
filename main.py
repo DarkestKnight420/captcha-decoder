@@ -4,6 +4,9 @@ import cv2
 import numpy as np
 import pytesseract
 import base64
+from PIL import Image
+import io
+
 
 app = FastAPI()
 
@@ -25,7 +28,14 @@ async def solve_captcha(data: ImageData):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid base64 string: {e}")
 
-    # Convert bytes data to a numpy array, then decode to an image
+    img = Image.open(io.BytesIO(img_bytes))
+
+    # If the image is a GIF, convert it to JPEG
+    if img.format == 'GIF':
+        with io.BytesIO() as output:
+            img.convert('RGB').save(output, format='JPEG')
+            img_bytes = output.getvalue()
+
     img_array = np.frombuffer(img_bytes, dtype=np.uint8)
     captcha_image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
